@@ -189,7 +189,6 @@ SUBROUTINE qedark_multimass(restartmode, &
      PRINT *, " " 
      PRINT *, "  WARNING: this calculation will NOT iterate over all valence bands" 
      PRINT *, " ivalbottom, ivaltop = ", ivalbottom, ivaltop
-     PRINT *, " icondbottom, icondtop = ", icondbottom, icondtop
      PRINT *, " "
   ENDIF
 
@@ -197,6 +196,7 @@ SUBROUTINE qedark_multimass(restartmode, &
   IF (numcond /= numcondtot) THEN
      PRINT *, " " 
      PRINT *, "  WARNING: this calculation will NOT iterate over all conduction bands" 
+     PRINT *, " icondbottom, icondtop = ", icondbottom, icondtop
      PRINT *, " "
   ENDIF
 

@@ -186,6 +186,7 @@ SUBROUTINE qedark_f2( restartmode, &
   IF (numval /= numvaltot) THEN
      PRINT *, " "
      PRINT *, "  WARNING: this calculation will NOT iterate over all valence bands"
+     PRINT *, " ivalbottom, ivaltop = ", ivalbottom, ivaltop
      PRINT *, " "
   ENDIF
 
@@ -193,6 +194,7 @@ SUBROUTINE qedark_f2( restartmode, &
   IF (numcond /= numcondtot) THEN
      PRINT *, " "
      PRINT *, "  WARNING: this calculation will NOT iterate over all conduction bands"
+     PRINT *, " icondbottom, icondtop = ", icondbottom, icondtop
      PRINT *, " "
   ENDIF
 
