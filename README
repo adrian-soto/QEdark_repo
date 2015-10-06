@@ -50,7 +50,7 @@
 
 
  2) Modify pwscf.f90 by including the code line
-       call formfact()
+       call qedark()
     just above the line
        CALL stop_run( exit_status )
 
@@ -71,7 +71,8 @@
 
  4) Copy the files qedark.f90, qedark_routines.f90, 
     qedark_f2.f90 and qedark_multimass.f90
-    into PW/src/ directory
+    from QEdark_files into Quantum ESPRESSO's directory
+    PW/src/ 
 
 
  5) Run configure script in QE main directory as
