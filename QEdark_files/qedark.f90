@@ -4,7 +4,7 @@
 !  Stony Brook University
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! This file is part of the code QEdark v1.0
+! This file is part of the code QEdark v1.0.0
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -125,7 +125,7 @@ SUBROUTINE qedark()
   print *, " "  
   print *, " "
   print *, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
-  print *, "--- Entering QEdark v1.0"
+  print *, "--- Entering QEdark v1.0.0"
   print *, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
   print *, " "
   print *, " "
@@ -180,7 +180,7 @@ SUBROUTINE qedark()
   print *, " "
   print *, " "
   print *, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
-  print *, "-- Exiting QEdark v1.0"
+  print *, "-- Exiting QEdark v1.0.0"
   print *, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
   print *, " "
   print *, " "
