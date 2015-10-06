@@ -1,0 +1,20 @@
+&dm_parameters	
+	calculation_mode= 'multimass'
+	restart = .false.
+	vearth_SI = 2.40E+05
+	vesc_SI = 6.0E+05
+	v0_SI = 2.30E+05
+	er_bin_type = 1
+	num_er_bins = 500
+	ermax_NU = 50.0
+	er_binsize = 0.1
+	scissor_correction = .true.
+	scissorgap = 1.11D0
+	deltav_SI(1) =  1.5E+04
+	deltav_SI(2) =  0.0E+00	
+	deltav_SI(3) = -1.5E+04
+	num_mx=3
+	mx_NU(1)  = 1.0E6
+	mx_NU(2)  = 1.0E7
+	mx_NU(3)  = 2.0E8
+/

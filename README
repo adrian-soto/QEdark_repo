@@ -1,0 +1,145 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			CONTENTS
+ 
+ - QEdark basic description
+ - Important info, disclaimer and acknowledgements
+ - QEdark quick installation guide
+ - QEdark execution guidelines
+ - To Do list
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			QEdark
+
+ Code to evaluate and integrate the form factor as in eq (3.16) 
+ in Essig et.al. --  arXiV:1509.01598 and integrals of this 
+ quantity in order to calculate the DM-electron scattering rate.
+ 
+
+
+ QEdark calculation modes:
+ 
+ - calculation_mode='f2' gives eq. (4.4) as the output quantity. 
+
+ - calculation_mode='multimass' computes the crystal form factor 
+  multiplied by the weight eta(vmin(Ei, Ei')), giving an output
+  quantity that is proportional to the scattering rate.
+ 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+			IMPORTANT
+
+ QEdark is an extension to the PWscf code of the 
+ Quantum ESPRESSO package. It has been written to work with
+ QE version v.5.1.2. It may work with other versions but this 
+ is not guranteed. 
+
+ We greatly acknowledge the Quantum ESPRESSO team for making 
+ their code community accessible. See the following publication 
+ for details
+ P. Giannozzi et.al. J. Phys. Condens. Matter 21, 395502 (2009)
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+         QEdark QUICK INSTALLATION GUIDE
+
+ 1) Download QuantumESPRESSO v.5.1.2 from
+ www.qe-forge.org/gf/download/frsrelease/185/753/espresso-5.1.2.tar.gz
+
+
+ 2) Modify pwscf.f90 by including the code line
+       call formfact()
+    just above the line
+       CALL stop_run( exit_status )
+
+
+ 
+ 3) Modify PW/src/Makefile to include dependencies on two
+    new files. Simply add
+
+      qedark.o \
+      qedark_routines.o \
+      qedark_f2.o \
+      qedark_multimass.o \
+      qedark_read_input.o \
+
+    directly below 
+       wyckoff.o \
+
+
+ 4) Copy the files qedark.f90, qedark_routines.f90, 
+    qedark_f2.f90 and qedark_multimass.f90
+    into PW/src/ directory
+
+
+ 5) Run configure script in QE main directory as
+       ./configure --disable-parallel 
+    
+    For OpenMP multithreaded version, run configure as
+       ./configure --disable-parallel --enable-openmp
+       
+       NOTE:QEdark v1.0 does not support OpenMPI parallelization
+
+ 6) Compile by typing the following command in QE main 
+    directory
+       make pw
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+
+         QEdark QUICK EXECUTION GUIDELINES
+
+ 1) The file dm.in must exist in the directory where the code
+    is being run since it contains the input data to QEdark. 
+ 
+ 2) QEdark is executed within Quantum ESPRESSO's pw.x program
+    which is copied to the bin/ directory. Execute as
+       QEdark_dir/bin/pw.x < QEinputfile > QEoutputfile
+ 
+ 3) In order to run the multithreaded version, the value of
+    OMP_STACKSIZE will most likely need to be increased. For
+    Si and Ge we have found that setting it to 512M has been
+    enough. 
+    
+    In bash this can be done by entering the commmand
+       export OMP_STACKSIZE=512M 
+
+  4) Users are encouraged to get familiar with the code by 
+     going through the examples in the folder QEdark_examples/, 
+     which have been chosen to introduce the user into several
+     features of QEdark. 
+
+  5) Previous knowledge of Quantum ESPRESSO
+     is highly recommended. There are plenty of tutorials and 
+     examples at the link
+     	 http://www.quantum-espresso.org/tutorials/
+     
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+			 TO-DO 
+
+      1) Make code more modular. In particular, split into one routine
+         to evaluate the form factors and another external
+         routine to carry out the momentum space integrals and 
+         sum over bands
+
+      2) Eliminate all the G-vector index tables by
+         understanding the G-vector sorting -- BYPASSED BY REDIFINING q-grid
+
+      3) Make this calculation an external program to pw.x
+
+      4) Parallelize with MPI
+
+      5) IMPROVE CODE COMMENTS!!!! In particular explain the algorithm for 
+         selecting the G-vectors, and the reason why the array index is needed
+
+      6) Rearrange create_bins so that unnecessary variables don't need to be passed
+         depending on the case. Also, put the whole binning stuff into a module, so 
+         that allocatable arrays can be passed. This way we can allocate binedges(:)
+         inside create_bins() instead of in formfact() (which is already too cluttered!)
+
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

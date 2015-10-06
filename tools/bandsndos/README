@@ -1,0 +1,9 @@
+The bands.dat files in this directory have been created with:
+
+ecutwfc=50.0Ry
+nbnd=14
+
+functionals and pseudopotentials:
+Si.pz-vbc.UPF
+Ge.pz-bhs.UPF
+
