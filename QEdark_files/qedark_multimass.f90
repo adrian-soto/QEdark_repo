@@ -4,7 +4,7 @@
 !  Stony Brook University
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! This file is part of the code QEdark v1.0.0
+! This file is part of the code QEdark v1.1.0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !
@@ -22,14 +22,14 @@ SUBROUTINE qedark_multimass(restartmode, &
   !
   USE wavefunctions_module,           ONLY: evc    ! For collinear, evc(npwx, nbnd) [look at allocate_wfc.f90]
   USE kinds,                          ONLY: DP
-  USE wvfct,                          ONLY: igk, nbnd, npwx, et,g2kin  !, btype
+  USE wvfct,                          ONLY: igk, nbnd, npwx, et, g2kin  !, btype
   USE klist,                          ONLY: nks, ngk, wk, xk, nelec
   USE lsda_mod,                       ONLY: nspin
   USE io_files,                       ONLY: nwordwfc, iunwfc, iunigk
   USE buffers,                        ONLY: get_buffer
   USE gvect,                          ONLY: g
   USE cell_base,                      ONLY: bg, tpiba, tpiba2, omega
-  
+  USE noncollin_module,               ONLY: noncolin
 
   use omp_lib
 
@@ -111,7 +111,7 @@ SUBROUTINE qedark_multimass(restartmode, &
   REAL(DP) :: aux(max_num_mx)
   REAL(DP) :: aux_dmff(max_num_mx)
   
-  COMPLEX(DP) :: f1                                                  ! Current |f|  used for iteration
+  COMPLEX(DP) :: f1(4)                                               ! Current |f|  used for iteration, 4 for all spin pairs (uu,ud,du,dd)
   COMPLEX(DP) :: f2                                                  ! Current |f|^2  used for iteration
 
 
@@ -168,13 +168,17 @@ SUBROUTINE qedark_multimass(restartmode, &
   print *, "           -------             "
 
   
-  IF (nspin .ne. 1) THEN
-     CALL errore ('qedark_multimass', 'Form factor calculation works only for spin-unpolarized systems!', 1)
-  ENDIF
+!  IF (nspin .ne. 1) THEN
+!     CALL errore ('qedark_multimass', 'Form factor calculation works only for spin-unpolarized systems!', 1)
+!  ENDIF
 
 
   ! Band indices
-  numvaltot = nelec/2
+  IF ( noncolin .eqv. .false.) THEN
+     numvaltot = nelec/2
+  ELSE
+     numvaltot = nelec
+  ENDIF
   numcondtot= nbnd-numvaltot
   ivalbottom = numvaltot-numval+1 
   ivaltop = numvaltot
@@ -219,16 +223,30 @@ SUBROUTINE qedark_multimass(restartmode, &
   !CALL qspace(bzv, .false.)
 
 
-  ALLOCATE ( evcouter(npwx, nbnd) , STAT=ierr )
-  IF( ierr /= 0 ) &
-       CALL errore( 'qedark_multimass ',' error allocating evcouter ', ABS(ierr) )
+  
+  IF (noncolin .eqv. .false.) THEN
+     ALLOCATE ( evcouter(npwx, nbnd) , STAT=ierr )
+     IF( ierr /= 0 ) &
+          CALL errore( 'qedark_multimass ',' error allocating evcouter ', ABS(ierr) )
+
+  ELSE ! spin up and spin down wf coefficients both in the same array of size 2*npwx
+     ALLOCATE ( evcouter(2*npwx, nbnd) , STAT=ierr )
+     IF( ierr /= 0 ) &
+          CALL errore( 'qedark_multimass ',' error allocating evcouter ', ABS(ierr) )
+
+
+  ENDIF
+
+
+
+
 
   ALLOCATE ( alligk(npwx, nks) , STAT=ierr )
   IF( ierr /= 0 ) &
        CALL errore( 'qedark_multimass ',' error allocating alligk ', ABS(ierr) )
   alligk(:,:)=0.0_DP ! when alligk=0, ig doesn't correspond to a G-vector in the set and should be disregarded 
-
   
+
 
   IF (num_er_bins > 999) CALL errore( 'qedark_multimass ','Number of energy recoil bins cannot exceed 999 ', ABS(ierr) )
 
@@ -316,8 +334,11 @@ SUBROUTINE qedark_multimass(restartmode, &
 
      DO ik2=ik2init, nks 
         !numpwk2 = ngk(ik2)     ! This can be used instead of npwx in the G-vector loops to avoid extra checks
+        
 
-        print *, "Iterating... @ ik2=", ik2, "from thread", omp_get_thread_num() 
+        !print *, "Iterating... @ ik2=", ik2, "from thread", omp_get_thread_num() 
+        print *, "Iterating... @ ik2=", ik2
+        
 
         ! Load wavefunctions from file         
         CALL get_buffer (evcouter, nwordwfc, iunwfc, ik2)                  
@@ -362,7 +383,7 @@ SUBROUTINE qedark_multimass(restartmode, &
 
                     
                     ! Initialize f1 for this (ik1, ik2, ig2)
-                    f1=0.0
+                    f1(:)=0.0
 
                     ! Energy difference of the interband transition
                     deltaE = et(iband2, ik2) - et(iband1, ik1)
@@ -385,14 +406,32 @@ SUBROUTINE qedark_multimass(restartmode, &
                        ! Not storing the full form factor in the memory since 
                        ! we're dumping each form factor term into the integral.
                        
-                       f1 = f1 + CONJG( evcouter(gsi(ig2,ig1) , iband2) ) * evc(ig1, iband1) 
+                       IF (noncolin .eqv. .false.) THEN
+                          f1(1) = f1(1) +  CONJG( evcouter(gsi(ig2,ig1), iband2) ) * evc(ig1, iband1) 
+                       
+                       ELSE
 
+                          f1(1) = f1(1) + CONJG( evcouter(gsi(ig2,ig1), iband2) ) * evc(ig1, iband1)            ! u-->u
+                          f1(2) = f1(2) + CONJG( evcouter(gsi(ig2,ig1)+npwx, iband2) ) * evc(ig1, iband1)       ! u-->d
+                          f1(3) = f1(3) + CONJG( evcouter(gsi(ig2,ig1), iband2) ) * evc(ig1+npwx, iband1)       ! d-->u
+                          f1(4) = f1(4) + CONJG( evcouter(gsi(ig2,ig1)+npwx, iband2) ) * evc(ig1+npwx, iband1)  ! d-->d
+
+                       ENDIF
+                       
                     ENDDO !G-vector sum in (12)
                     
                     
-                    ! Take norm squared
-                    f2=DBLE( CONJG(f1)*f1 )
-                    
+                    ! Take norm squared and sum over spins if needed
+                    IF (noncolin .eqv. .false.) THEN
+                       f2=DBLE( CONJG(f1(1))*f1(1) )
+                    ELSE
+                       f2=DBLE( &
+                            CONJG(f1(1))*f1(1) + &
+                            CONJG(f1(2))*f1(2) + &
+                            CONJG(f1(3))*f1(3) + &
+                            CONJG(f1(4))*f1(4) )
+                    ENDIF
+
                     ! Calculate vmin and convert to km/s
                     DO imx=1, num_mx
                        vmin_aux(imx) = vmin(deltaE, qnorm, mx_RAU(imx) ) * RAU2kmps

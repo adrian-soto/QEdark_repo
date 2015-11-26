@@ -4,7 +4,7 @@
 !  Stony Brook University
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! This file is part of the code QEdark v1.0.0
+! This file is part of the code QEdark v1.1.0
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !
@@ -31,6 +31,7 @@ SUBROUTINE qedark_f2( restartmode, &
   USE buffers,                        ONLY: get_buffer
   USE gvect,                          ONLY: g
   USE cell_base,                      ONLY: bg, tpiba, tpiba2, omega
+  USE noncollin_module,               ONLY: noncolin
 
   use omp_lib
 
@@ -114,7 +115,7 @@ SUBROUTINE qedark_f2( restartmode, &
   REAL(DP) :: aux(max_num_mx)
   REAL(DP) :: aux_dmff(max_num_mx)
   
-  COMPLEX(DP) :: f1                                                  ! Current |f|  used for iteration
+  COMPLEX(DP) :: f1(4)                                               ! Current |f|  used for iteration, 4 possible spin pairs
   COMPLEX(DP) :: f2                                                  ! Current |f|^2  used for iteration
   !REAL(DP), ALLOCATABLE :: ctot(:,:), cbinned(:,:,:)              ! Integrated form factor C^{i-->i'}
 
@@ -171,7 +172,11 @@ SUBROUTINE qedark_f2( restartmode, &
 
 
   ! Band indices
-  numvaltot = nelec/2
+  IF ( noncolin .eqv. .false.) THEN
+     numvaltot = nelec/2
+  ELSE
+     numvaltot = nelec
+  ENDIF
   numcondtot= nbnd-numvaltot
   ivalbottom = numvaltot-numval+1
   ivaltop = numvaltot
@@ -222,9 +227,20 @@ SUBROUTINE qedark_f2( restartmode, &
      CALL errore ('qedark_f2', 'Form factor calculation works only for spin-unpolarized systems!', 1)
   ENDIF
 
-  ALLOCATE ( evcouter(npwx, nbnd) , STAT=ierr )
-  IF( ierr /= 0 ) &
-       CALL errore( 'qedark_f2',' error allocating evcouter ', ABS(ierr) )
+  IF (noncolin .eqv. .false.) THEN
+     ALLOCATE ( evcouter(npwx, nbnd) , STAT=ierr )
+     IF( ierr /= 0 ) &
+          CALL errore( 'qedark_f2',' error allocating evcouter ', ABS(ierr) )
+
+  ELSE
+     ALLOCATE ( evcouter(2*npwx, nbnd) , STAT=ierr )
+     IF( ierr /= 0 ) &
+          CALL errore( 'qedark_f2',' error allocating evcouter ', ABS(ierr) )
+  ENDIF
+
+
+
+
 
   ALLOCATE ( alligk(npwx, nks) , STAT=ierr )
   IF( ierr /= 0 ) &
@@ -337,7 +353,8 @@ SUBROUTINE qedark_f2( restartmode, &
 
      DO ik2=ik2init, nks 
 
-        print *, "Iterating... @ ik2=", ik2, "from thread", omp_get_thread_num() 
+        !print *, "Iterating... @ ik2=", ik2, "from thread", omp_get_thread_num() 
+        print *, "Iterating... @ ik2=", ik2, "from thread"
 
         ! Load wavefunctions from file         
         CALL get_buffer (evcouter, nwordwfc, iunwfc, ik2)                  
@@ -385,20 +402,37 @@ SUBROUTINE qedark_f2( restartmode, &
                     iq = find_bin(numqbins, binedgesQ, qnorm)    
                     
                     ! Initialize f1 for this (ik1, ik2, ig2)
-                    f1=0.0
-                                                         
+                    f1(:)=0.0
+                    
                     ! Sum over G to calculate formfactor                       
                     DO ig1=1, ngk(ik1) 
                        ! Make sure that G-vector exists
                        IF (alligk(ig1,ik1) < 1) CYCLE                          
                        IF (gsi(ig2,ig1) < 1) CYCLE                          
                        
-                       f1 = f1 + CONJG( evcouter(gsi(ig2,ig1) , iband2) ) * evc(ig1, iband1) 
+
+                       IF (noncolin .eqv. .false.) THEN
+                          f1 = f1 + CONJG( evcouter(gsi(ig2,ig1) , iband2) ) * evc(ig1, iband1) 
                        
+                       ELSE
+                          f1(1) = f1(1) + CONJG( evcouter(gsi(ig2,ig1), iband2) ) * evc(ig1, iband1)            ! u-->u
+                          f1(2) = f1(2) + CONJG( evcouter(gsi(ig2,ig1)+npwx, iband2) ) * evc(ig1, iband1)       ! u-->d
+                          f1(3) = f1(3) + CONJG( evcouter(gsi(ig2,ig1), iband2) ) * evc(ig1+npwx, iband1)       ! d-->u
+                          f1(4) = f1(4) + CONJG( evcouter(gsi(ig2,ig1)+npwx, iband2) ) * evc(ig1+npwx, iband1)  ! d-->d
+                       ENDIF
+                          
+
                     ENDDO !G-vector sum for formfactor                    
                     
-                    ! Take norm squared
-                    f2=REAL( CONJG(f1)*f1 )
+                    ! Take norm squared and sum over spins (when non-collinear)
+                    IF(noncolin .eqv. .false.) THEN
+                       f2= CONJG(f1(1))*f1(1) 
+                    ELSE
+                       f2=  CONJG(f1(1)) * f1(1) + &
+                            CONJG(f1(2)) * f1(2) + &
+                            CONJG(f1(3)) * f1(3) + &
+                            CONJG(f1(4)) * f1(4) 
+                    ENDIF
 
                     ! Add contribution to corresponding bin
                     ctot(iq, iE) = ctot(iq, iE) + f2 * wq

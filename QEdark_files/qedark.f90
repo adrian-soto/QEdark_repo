@@ -4,7 +4,7 @@
 !  Stony Brook University
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! This file is part of the code QEdark v1.0.0
+! This file is part of the code QEdark v1.1.0
 !
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
@@ -73,7 +73,7 @@ SUBROUTINE qedark()
   USE wavefunctions_module,           ONLY: evc                  ! For collinear, evc(npwx, nbnd) [look at allocate_wfc.f90]
   USE kinds,                          ONLY: DP
   USE wvfct,                          ONLY: igk, nbnd, npwx, et,g2kin  !, btype
-  USE klist,                          ONLY: nks, ngk, wk, xk, nelec
+  USE klist,                          ONLY: nks, nkstot, ngk, wk, xk, nelec
   USE lsda_mod,                       ONLY: nspin
   USE io_files,                       ONLY: nwordwfc, iunwfc, iunigk
   USE buffers,                        ONLY: get_buffer
@@ -125,15 +125,21 @@ SUBROUTINE qedark()
   print *, " "  
   print *, " "
   print *, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
-  print *, "--- Entering QEdark v1.0.0"
+  print *, "--- Entering QEdark v1.1.0"
   print *, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
   print *, " "
   print *, " "
   
 
-
   IF (nspin .ne. 1) THEN
-     CALL errore ('QEdark', 'Form factor calculation works only for spin-unpolarized systems!', 1)
+     PRINT *, " "
+     PRINT *, " Spin-polarized calculation == TRUE"
+     PRINT *, " "
+     !CALL errore ('QEdark', 'Form factor calculation works only for spin-unpolarized systems!', 1)
+  ELSE
+     PRINT *, " "
+     PRINT *, " Spin-polarized calculation == FALSE"
+     PRINT *, " "
   ENDIF
 
 
@@ -180,7 +186,7 @@ SUBROUTINE qedark()
   print *, " "
   print *, " "
   print *, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
-  print *, "-- Exiting QEdark v1.0.0"
+  print *, "-- Exiting QEdark v1.1.0"
   print *, "&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&"
   print *, " "
   print *, " "
