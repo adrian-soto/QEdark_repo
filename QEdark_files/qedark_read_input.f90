@@ -71,9 +71,9 @@ SUBROUTINE qedark_read_input(&
   calculation_mode = 'f2'
   
   IF ( noncolin .eqv. .false.) THEN
-     numvaltot = nelec/2
+     nbndval = nelec/2
   ELSE
-     numvaltot = nelec
+     nbndval = nelec
   ENDIF
   nbndcond = nbnd - nbndval
   
