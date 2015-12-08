@@ -18,6 +18,7 @@ SUBROUTINE qedark_read_input(&
   USE kinds,                       ONLY: DP
   USE klist,                       ONLY: nelec
   USE wvfct,                       ONLY: nbnd
+  USE noncollin_module,            ONLY: noncolin
 
   IMPLICIT NONE
 
@@ -68,19 +69,29 @@ SUBROUTINE qedark_read_input(&
   ! Default values
   restart = .false.
   calculation_mode = 'f2'
-  nbndval = nelec/2
+  
+  IF ( noncolin .eqv. .false.) THEN
+     numvaltot = nelec/2
+  ELSE
+     numvaltot = nelec
+  ENDIF
   nbndcond = nbnd - nbndval
+  
   vearth_SI = 0.0_DP
   vesc_SI = 0.0_DP
   v0_SI = 0.0_DP
+  
   deltav_SI(:) = 0.0_DP
   mx_NU(:) = 0.510998910 ! == electron rest mass
+  
   er_bin_type = 0
   num_er_bins = 1
   ermax_NU = 0.0_DP
   er_binsize = 1.0_DP
+  
   num_q_bins = 1
   deltaq=0.1
+  
   scissor_correction = .false.
   scissorgap = 0.0_DP
   
