@@ -9,7 +9,7 @@
 !
 !
 SUBROUTINE qedark_f2( restartmode, &
-     numval, numcond, &
+     nksf, numval, numcond, &
      vearth_SI, vesc_SI, v0_SI, deltav_SI, &
      Er_bin_type, num_er_bins, ermax_NU, er_binsize, &
      numqbins, dq, &
@@ -135,6 +135,7 @@ SUBROUTINE qedark_f2( restartmode, &
   REAL(DP) :: dk(3,nks,nks)                                       ! Table storing all k1-k2 values  TODO: this table is antisymmetric and can be reduced
   INTEGER :: gsi(npwx, npwx)                                      ! Sum index table for band2band
 
+  INTEGER :: nksf                                                 ! Number of k-points for formfactor calculation
   
   INTEGER :: numval, numcond                                      ! Number of occupied and unoccupied Kohn-Sham orbitals. TO BE SET BY USER!
   INTEGER :: numvaltot, numcondtot                                ! Total # bands in DFT run. numvaltot==nelec/2 and numcondtot=nbnd-numvaltot 
@@ -165,10 +166,14 @@ SUBROUTINE qedark_f2( restartmode, &
   print *, "           -------             "
 
 
-  IF (nspin .ne. 1) THEN
-     CALL errore ('qedark_f2', 'Form factor calculation works only for spin-unpolarized systems!', 1)
-  ENDIF
 
+!  IF (nspin .ne. 1) THEN
+!     CALL errore ('qedark_f2', 'Form factor calculation works only for spin-unpolarized systems!', 1)
+!  ENDIF
+
+
+  IF ( nksf > nks .or. nksf < 0 ) &
+       CALL errore( 'qedark_f2 ',' nksf has a non-allowed value. Check input. ', ABS(ierr) )
 
 
   ! Band indices
@@ -186,7 +191,7 @@ SUBROUTINE qedark_f2( restartmode, &
 
 
   IF( numval>numvaltot .or. numcond>numcondtot .or. numval<1 .or. numcond<1 ) &
-       CALL errore( 'formfactor ',' Check numval and numcond values in input ', ABS(ierr) )
+       CALL errore( 'qedark_f2 ',' Check numval and numcond values in input ', ABS(ierr) )
 
   IF (numval /= numvaltot) THEN
      PRINT *, " "
@@ -302,7 +307,7 @@ SUBROUTINE qedark_f2( restartmode, &
   IF (num_er_bins > 0) THEN
      ALLOCATE (binedgesq(num_er_bins+1), STAT=ierr )
      IF( ierr /= 0 ) &
-          CALL errore( 'formfactor ',' error allocating binedgesq ', ABS(ierr) )
+          CALL errore( 'qedark_f2 ',' error allocating binedgesq ', ABS(ierr) )
 
           
      CALL create_bins(er_bin_type, 0.0_DP, dq*numqbins, &
@@ -317,7 +322,7 @@ SUBROUTINE qedark_f2( restartmode, &
 
   ALLOCATE( ctot(numqbins+1, num_Er_bins+1) , STAT=ierr )
   IF( ierr /= 0 ) &
-       CALL errore( 'formfactor ',' cannot allocate ctot ', ABS(ierr) )
+       CALL errore( 'qedark_f2 ',' cannot allocate ctot ', ABS(ierr) )
   ctot(:,:) = 0.0_DP
   
 
@@ -351,7 +356,7 @@ SUBROUTINE qedark_f2( restartmode, &
      !$omp reduction(+ : ctot) 
      !$omp do
 
-     DO ik2=ik2init, nks 
+     DO ik2=ik2init, nksf 
 
         !print *, "Iterating... @ ik2=", ik2, "from thread", omp_get_thread_num() 
         print *, "Iterating... @ ik2=", ik2, "from thread"
@@ -361,7 +366,7 @@ SUBROUTINE qedark_f2( restartmode, &
 
                 
         ! Loop over k-vector index of inner wavefunction evc
-        DO ik1=ik1init, nks
+        DO ik1=ik1init, nksf
 
            ! Load wavefunctions from file
            CALL get_buffer (evc, nwordwfc, iunwfc, ik1)  
@@ -428,10 +433,8 @@ SUBROUTINE qedark_f2( restartmode, &
                     IF(noncolin .eqv. .false.) THEN
                        f2= CONJG(f1(1))*f1(1) 
                     ELSE
-                       f2=  CONJG(f1(1)) * f1(1) + &
-                            CONJG(f1(2)) * f1(2) + &
-                            CONJG(f1(3)) * f1(3) + &
-                            CONJG(f1(4)) * f1(4) 
+                       f1(1)= SUM(f1(:))
+                       f2   = DBLE( CONJG(f1(1))*f1(1) )
                     ENDIF
 
                     ! Add contribution to corresponding bin

@@ -111,6 +111,8 @@ SUBROUTINE qedark()
   
   INTEGER :: num_q_bins
   REAL(DP) :: deltaq
+
+  INTEGER :: nksf                                                 ! Number of k-points in formfactor calculation.
   
   INTEGER :: nbndval, nbndcond                                    ! Number of occupied and unoccupied Kohn-Sham orbitals. TO BE SET BY USER!
   
@@ -131,6 +133,13 @@ SUBROUTINE qedark()
   print *, " "
   
 
+    !!!!! DEBUG                                                                                                                                                        
+  do ierr=1, 100
+     print *, "DEBUG-- from qedark() i=", ierr
+  enddo
+  !!!!! END DEBUG      
+
+
   IF (nspin .ne. 1) THEN
      PRINT *, " "
      PRINT *, " Spin-polarized calculation == TRUE"
@@ -147,7 +156,7 @@ SUBROUTINE qedark()
   WRITE(*,*), " "
   CALL qedark_read_input(&
      infile, calculation_mode, restart_mode, &
-     nbndval, nbndcond, &
+     nksf, nbndval, nbndcond, &
      vearth_SI, vesc_SI, v0_SI, deltav_SI, &
      num_mx, mx_NU, &
      Er_bin_type, num_er_bins, ermax_NU, er_binsize, &
@@ -162,7 +171,7 @@ SUBROUTINE qedark()
   IF (calculation_mode == "f2") THEN
      CALL qedark_f2( &
           restart_mode, &
-          nbndval, nbndcond, &
+          nksf, nbndval, nbndcond, &
           vearth_SI, vesc_SI, v0_SI, deltav_SI, &
           Er_bin_type, num_er_bins, ermax_NU, er_binsize, &
           num_q_bins, deltaq, &
@@ -171,7 +180,7 @@ SUBROUTINE qedark()
   ELSEIF (calculation_mode == "multimass") THEN
      CALL qedark_multimass( &
           restart_mode, &
-          nbndval, nbndcond, &
+          nksf, nbndval, nbndcond, &
           vearth_SI, vesc_SI, v0_SI, deltav_SI, &
           num_mx, mx_NU, &
           Er_bin_type, num_er_bins, ermax_NU, er_binsize, &

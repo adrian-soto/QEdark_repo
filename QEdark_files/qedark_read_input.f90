@@ -8,7 +8,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 SUBROUTINE qedark_read_input(&
      infile, calculation_mode, restart, &
-     nbndval, nbndcond, &
+     nksf, nbndval, nbndcond, &
      vearth_SI, vesc_SI, v0_SI, deltav_SI, &
      num_mx, mx_NU, & 
      er_bin_type, num_er_bins, ermax_NU, er_binsize, &
@@ -16,7 +16,7 @@ SUBROUTINE qedark_read_input(&
      scissor_correction, scissorgap)
   
   USE kinds,                       ONLY: DP
-  USE klist,                       ONLY: nelec
+  USE klist,                       ONLY: nelec, nks
   USE wvfct,                       ONLY: nbnd
   USE noncollin_module,            ONLY: noncolin
 
@@ -26,7 +26,8 @@ SUBROUTINE qedark_read_input(&
 
   CHARACTER(len=20) :: calculation_mode
   LOGICAL, INTENT(OUT) :: restart
-  
+
+  INTEGER, INTENT(OUT) :: nksf           ! Number of k-points in the formfactor calculation. Takes the first nksf of all nks k-points.
   INTEGER, INTENT(OUT) :: nbndval
   INTEGER, INTENT(OUT) :: nbndcond
 
@@ -57,7 +58,7 @@ SUBROUTINE qedark_read_input(&
 
   NAMELIST / dm_parameters / restart, &
        calculation_mode, &
-       nbndval, nbndcond, &
+       nksf, nbndval, nbndcond, &
        vearth_SI, vesc_SI, v0_SI, deltav_SI, &
        num_mx, mx_NU, &
        er_bin_type, num_er_bins, ermax_NU, er_binsize, &
@@ -69,6 +70,9 @@ SUBROUTINE qedark_read_input(&
   ! Default values
   restart = .false.
   calculation_mode = 'f2'
+
+  
+  nksf=nks
   
   IF ( noncolin .eqv. .false.) THEN
      nbndval = nelec/2

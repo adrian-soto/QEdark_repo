@@ -9,7 +9,7 @@
 !
 !
 SUBROUTINE qedark_multimass(restartmode, &
-     nksf, numval, numcond, &
+     numval, numcond, &
      vearth_SI, vesc_SI, v0_SI, deltav_SI, &
      num_mx, mx_NU, &
      Er_bin_type, num_er_bins, ermax_NU, er_binsize, &
@@ -132,8 +132,7 @@ SUBROUTINE qedark_multimass(restartmode, &
   REAL(DP) :: dk(3,nks,nks)                                       ! Table storing all k1-k2 values  TODO: this table is antisymmetric and can be reduced
 
   INTEGER :: gsi(npwx, npwx)                                      ! G-vector sum index table for one pair of k-points
-
-  INTEGER :: nksf                                                 ! Number of k-points for formfactor calculation  
+  
 
   INTEGER :: numval, numcond                                      ! Number of occupied and unoccupied Kohn-Sham orbitals. TO BE SET BY USER!
   INTEGER :: numvaltot, numcondtot                                ! Total # bands in DFT run. numvaltot==nelec/2 and numcondtot=nbnd-numvaltot
@@ -168,17 +167,10 @@ SUBROUTINE qedark_multimass(restartmode, &
   print *, " DM-electron scattering rates for multiple DM masses."
   print *, "           -------             "
 
-
-
-
   
 !  IF (nspin .ne. 1) THEN
 !     CALL errore ('qedark_multimass', 'Form factor calculation works only for spin-unpolarized systems!', 1)
 !  ENDIF
-
-
-  IF ( nksf > nks .or. nksf < 0 ) &
-       CALL errore( 'qedark_f2 ',' nksf has a non-allowed value. Check input. ', ABS(ierr) )
 
 
   ! Band indices
@@ -208,7 +200,6 @@ SUBROUTINE qedark_multimass(restartmode, &
   IF (numcond /= numcondtot) THEN
      PRINT *, " " 
      PRINT *, "  WARNING: this calculation will NOT iterate over all conduction bands" 
-     PRINT *, " icondbottom, icondtop = ", ivalbottom, ivaltop
      PRINT *, " icondbottom, icondtop = ", icondbottom, icondtop
      PRINT *, " "
   ENDIF
@@ -220,7 +211,6 @@ SUBROUTINE qedark_multimass(restartmode, &
 
   print *, "  npwx      ==", npwx
   print *, "  nbnd      ==", nbnd
-  print *, "  nksf      ==", nksf
   print *, "  numval    ==", numval
   print *, "  numvaltot ==", numvaltot
   print *, "  numcond   ==", numcond
@@ -329,8 +319,6 @@ SUBROUTINE qedark_multimass(restartmode, &
      !  WRITE(18,*) "            ik          iq         i          i'          |f_\{i-->i'}(ik,iq)|^2"     
 
 
-
-
      ik1init=1
      ik2init=1
      
@@ -344,7 +332,7 @@ SUBROUTINE qedark_multimass(restartmode, &
      !$omp reduction(+ : ctot, cbinned) 
      !$omp do
 
-     DO ik2=ik2init, nksf 
+     DO ik2=ik2init, nks 
         !numpwk2 = ngk(ik2)     ! This can be used instead of npwx in the G-vector loops to avoid extra checks
         
 
@@ -356,10 +344,9 @@ SUBROUTINE qedark_multimass(restartmode, &
         CALL get_buffer (evcouter, nwordwfc, iunwfc, ik2)                  
 
         ! Loop over k-vector index of inner wavefunction evc
-        DO ik1=ik1init, nksf
+        DO ik1=ik1init, nks
            !numpwk1 = ngk(ik1)    ! This can be used instead of npwx in the G-vector loops to avoid extra checks
            
-
            !!!!!!!! CALL SaveRestartData(ik1, ik2, num_er_bins, nmonths, ctot, cbinned)
                       
            ! Update G-vector table for current (ik1, ik2)
@@ -388,7 +375,7 @@ SUBROUTINE qedark_multimass(restartmode, &
                     
                     ! Calculate |q| and convert to RAU multiplying by tpiba
                     qnorm = tpiba * sqrt(sum(q(:)**2))
-                                        
+                    
                     IF (qnorm < tol) THEN
                        ! |q|==0.0 and cannot divide by it --> leave this term out of the integral
                        CYCLE 
@@ -406,7 +393,6 @@ SUBROUTINE qedark_multimass(restartmode, &
                     IF (num_er_bins > 0) &
                          ibin = find_bin(num_er_bins, binedges, deltaE)    
                     
-                    
 
                     ! Sum over G to calculate formfactor                       
                     
@@ -420,8 +406,8 @@ SUBROUTINE qedark_multimass(restartmode, &
                        ! we're dumping each form factor term into the integral.
                        
                        IF (noncolin .eqv. .false.) THEN
-                          f1(1) = f1(1) +  CONJG( evcouter(gsi(ig2,ig1), iband2) ) * evc(ig1, iband1) 
-                       
+                          f1(1) = f1(1) +  CONJG( evcouter(gsi(ig2,ig1), iband2) ) * evc(ig1, iband1)                        
+
                        ELSE
 
                           f1(1) = f1(1) + CONJG( evcouter(gsi(ig2,ig1), iband2) ) * evc(ig1, iband1)            ! u-->u
@@ -437,9 +423,13 @@ SUBROUTINE qedark_multimass(restartmode, &
                     ! Take norm squared and sum over spins if needed
                     IF (noncolin .eqv. .false.) THEN
                        f2=DBLE( CONJG(f1(1))*f1(1) )
+
                     ELSE
-                       f1(1)=SUM(f1(:))
-                       f2=DBLE( CONJG(f1(1))*f1(1) )
+                       f2=DBLE( &
+                            CONJG(f1(1))*f1(1) + &
+                            CONJG(f1(2))*f1(2) + &
+                            CONJG(f1(3))*f1(3) + &
+                            CONJG(f1(4))*f1(4) )
                     ENDIF
 
                     ! Calculate vmin and convert to km/s
