@@ -87,6 +87,9 @@ SUBROUTINE qedark_read_input(&
   
   deltav_SI(:) = 0.0_DP
   mx_NU(:) = 0.510998910 ! == electron rest mass
+
+  
+  num_mx = 0
   
   er_bin_type = 0
   num_er_bins = 1

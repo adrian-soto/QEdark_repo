@@ -334,6 +334,67 @@ SUBROUTINE C2file_onlyf2(filename, numqbins, num_er_bins, ctot)
 
 END SUBROUTINE C2file_onlyf2
 
+
+
+SUBROUTINE C2file_f2_3d(filename, dq, numqbins, dEr, num_Er_bins, ctot)
+  !
+  ! Adrian Soto
+  ! 24-03-2016
+  ! Stony Brook University
+  !
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  ! Print output of f2 calculation
+  !
+  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+  USE kinds,                         ONLY: DP
+
+  IMPLICIT NONE
+  
+  CHARACTER(*), INTENT(IN) :: filename
+  INTEGER, INTENT(IN) :: num_Er_bins, numqbins
+  REAL(DP), INTENT(IN):: dq, dEr
+  REAL(DP), INTENT(IN):: ctot(numqbins+1, numqbins+1, numqbins+1, num_Er_bins+1)
+
+  
+  INTEGER :: iqx, iqy, iqz, iE
+  CHARACTER(3) :: numbinsE ! WARNING: max numbins is 999
+  CHARACTER(3) :: numbinsq ! WARNING: max numbins is 999
+  CHARACTER(26) :: FMT              ! Format specifier  
+
+
+  ! Print to file
+  OPEN (UNIT=188, FILE=filename, STATUS='replace', ACCESS='sequential', FORM='formatted')
+  
+  ! Write the number of bins to string variable numbins 
+  
+
+  ! Create format descriptor for real numbers
+  FMT = "(ES12.6)"  
+
+  WRITE(188,*) numqbins, dq
+  WRITE(188,*) numqbins, dq
+  WRITE(188,*) numqbins, dq
+  WRITE(188,*) num_Er_bins, dEr
+
+  DO iE=1, num_er_bins
+     DO iqz=1, numqbins
+        DO iqy=1, numqbins
+           DO iqx=1, numqbins
+              WRITE(188, FMT) ctot(iqx, iqy, iqz, iE)
+           ENDDO
+        ENDDO
+     ENDDO
+  ENDDO
+
+  CLOSE(188)
+
+  print *, " "
+  print *, " Output written to ", filename
+  print *, " "
+
+END SUBROUTINE C2file_f2_3d
+
   
 
 

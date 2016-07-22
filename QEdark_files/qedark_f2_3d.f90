@@ -1,14 +1,14 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Adrian Soto
-!  06-10-2015
+!  24-03-2016
 !  Stony Brook University
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
-! This file is part of the code QEdark v1.1.0
+! This file is part of the code QEdark v1.1.1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !
 !
-SUBROUTINE qedark_f2( restartmode, &
+SUBROUTINE qedark_f2_3d( restartmode, &
      nksf, numval, numcond, &
      vearth_SI, vesc_SI, v0_SI, deltav_SI, &
      Er_bin_type, num_er_bins, ermax_NU, er_binsize, &
@@ -120,7 +120,7 @@ SUBROUTINE qedark_f2( restartmode, &
   !REAL(DP), ALLOCATABLE :: ctot(:,:), cbinned(:,:,:)              ! Integrated form factor C^{i-->i'}
 
 
-  REAL(DP), ALLOCATABLE :: ctot(:,:)                              ! Integrated form factor. No band indices
+  REAL(DP), ALLOCATABLE :: ctot(:,:,:,:)                          ! Integrated form factor. No band indices
 
 
   CHARACTER(20) :: outfile = "C.dat"                               ! Output file name 
@@ -148,7 +148,7 @@ SUBROUTINE qedark_f2( restartmode, &
 
 
   INTEGER :: numqbins
-  INTEGER :: iq                                                   ! for |q| bin
+  INTEGER :: iqx, iqy, iqz                                        ! for q bin
   REAL(DP) :: dq                                                  ! size of |q| bin
   REAL(DP), ALLOCATABLE :: binedgesq(:)  
   
@@ -158,22 +158,22 @@ SUBROUTINE qedark_f2( restartmode, &
   runff = .true. ! Set to false to not skip ff calculation --for debugging purposes
 
 
-  CALL start_clock( ' qedark_f2 ')
+  CALL start_clock( ' qedark_f2_3d ')
 
   print *, "           -------             "
-  print *, " calculation_mode == f2"
+  print *, " calculation_mode == f2_3d"
   print *, " Calculating formfactor squared binned in E and q"
   print *, "           -------             "
 
 
 
 !  IF (nspin .ne. 1) THEN
-!     CALL errore ('qedark_f2', 'Form factor calculation works only for spin-unpolarized systems!', 1)
+!     CALL errore ('qedark_f2_3d', 'Form factor calculation works only for spin-unpolarized systems!', 1)
 !  ENDIF
 
 
   IF ( nksf > nks .or. nksf < 0 ) &
-       CALL errore( 'qedark_f2 ',' nksf has a non-allowed value. Check input. ', ABS(ierr) )
+       CALL errore( 'qedark_f2_3d ',' nksf has a non-allowed value. Check input. ', ABS(ierr) )
 
 
   ! Band indices
@@ -191,7 +191,7 @@ SUBROUTINE qedark_f2( restartmode, &
 
 
   IF( numval>numvaltot .or. numcond>numcondtot .or. numval<1 .or. numcond<1 ) &
-       CALL errore( 'qedark_f2 ',' Check numval and numcond values in input ', ABS(ierr) )
+       CALL errore( 'qedark_f2_3d ',' Check numval and numcond values in input ', ABS(ierr) )
 
   IF (numval /= numvaltot) THEN
      PRINT *, " "
@@ -229,18 +229,18 @@ SUBROUTINE qedark_f2( restartmode, &
 
 
   IF (nspin .ne. 1) THEN
-     CALL errore ('qedark_f2', 'Form factor calculation works only for spin-unpolarized systems!', 1)
+     CALL errore ('qedark_f2_3d', 'Form factor calculation works only for spin-unpolarized systems!', 1)
   ENDIF
 
   IF (noncolin .eqv. .false.) THEN
      ALLOCATE ( evcouter(npwx, nbnd) , STAT=ierr )
      IF( ierr /= 0 ) &
-          CALL errore( 'qedark_f2',' error allocating evcouter ', ABS(ierr) )
+          CALL errore( 'qedark_f2_3d',' error allocating evcouter ', ABS(ierr) )
 
   ELSE
      ALLOCATE ( evcouter(2*npwx, nbnd) , STAT=ierr )
      IF( ierr /= 0 ) &
-          CALL errore( 'qedark_f2',' error allocating evcouter ', ABS(ierr) )
+          CALL errore( 'qedark_f2_3d',' error allocating evcouter ', ABS(ierr) )
   ENDIF
 
 
@@ -249,7 +249,7 @@ SUBROUTINE qedark_f2( restartmode, &
 
   ALLOCATE ( alligk(npwx, nks) , STAT=ierr )
   IF( ierr /= 0 ) &
-       CALL errore( 'qedark_f2',' error allocating alligk ', ABS(ierr) )
+       CALL errore( 'qedark_f2_3d',' error allocating alligk ', ABS(ierr) )
   alligk(:,:)=0.0_DP ! when alligk=0, ig doesn't correspond to a G-vector in the set and should be disregarded 
 
   
@@ -259,8 +259,8 @@ SUBROUTINE qedark_f2( restartmode, &
   WRITE(*,*), " "
 
 
-  IF (num_er_bins > 999) CALL errore( 'qedark_f2','Number of energy recoil bins cannot exceed 999 ', ABS(ierr) )
-  IF (numqbins > 999) CALL errore( 'qedark_f2','Number of momentum transfer bins cannot exceed 999 ', ABS(ierr) )
+  IF (num_er_bins > 999) CALL errore( 'qedark_f2_3d','Number of energy recoil bins cannot exceed 999 ', ABS(ierr) )
+  IF (numqbins > 999) CALL errore( 'qedark_f2_3d','Number of momentum transfer bins cannot exceed 999 ', ABS(ierr) )
   
 
   vearth_RAU = (twobyalpha/speedoflight)*vearth_SI
@@ -290,7 +290,7 @@ SUBROUTINE qedark_f2( restartmode, &
      
      ALLOCATE (binedgese(num_er_bins+1), STAT=ierr )
      IF( ierr /= 0 ) &
-          CALL errore( 'qedark_f2',' error allocating binedgesE ', ABS(ierr) )
+          CALL errore( 'qedark_f2_3d',' error allocating binedgesE ', ABS(ierr) )
      
      CALL create_bins(er_bin_type, 0.0_DP, ermax_RAU, &
           num_er_bins, er_binsize, binedgese)
@@ -307,10 +307,10 @@ SUBROUTINE qedark_f2( restartmode, &
   IF (num_er_bins > 0) THEN
      ALLOCATE (binedgesq(num_er_bins+1), STAT=ierr )
      IF( ierr /= 0 ) &
-          CALL errore( 'qedark_f2 ',' error allocating binedgesq ', ABS(ierr) )
+          CALL errore( 'qedark_f2_3d ',' error allocating binedgesq ', ABS(ierr) )
 
           
-     CALL create_bins(er_bin_type, 0.0_DP, dq*numqbins, &
+     CALL create_bins(er_bin_type, -dq*numqbins/2.0, dq*numqbins/2.0, &
           numqbins, dq, binedgesq)
      WRITE (*,*), " "
      WRITE (*,*) "Creating q bins for formfactor sum ..."
@@ -320,10 +320,10 @@ SUBROUTINE qedark_f2( restartmode, &
 
 
 
-  ALLOCATE( ctot(numqbins+1, num_Er_bins+1) , STAT=ierr )
+  ALLOCATE( ctot(numqbins+1, numqbins+1, numqbins+1, num_Er_bins+1) , STAT=ierr )
   IF( ierr /= 0 ) &
-       CALL errore( 'qedark_f2 ',' cannot allocate ctot ', ABS(ierr) )
-  ctot(:,:) = 0.0_DP
+       CALL errore( 'qedark_f2_3d ',' cannot allocate ctot ', ABS(ierr) )
+  ctot(:,:,:,:) = 0.0_DP
   
 
 
@@ -351,7 +351,8 @@ SUBROUTINE qedark_f2( restartmode, &
 
      ! Loop over k-vector index of outer wavefunction evcouter
      !$omp parallel &
-     !$omp private(ig1, ig2, iband1, iband2, q, qnorm, deltaE, iE, iq,  &
+     !$omp private(ig1, ig2, iband1, iband2, q, qnorm, deltaE, iE, &
+     !$omp iqx, iqy, iqz, &
      !$omp ik1, ik2, evcouter, evc, gsi, wq, f1, f2) &
      !$omp reduction(+ : ctot) 
      !$omp do
@@ -392,19 +393,17 @@ SUBROUTINE qedark_f2( restartmode, &
                     ! Make sure that G-vector exists
                     IF (alligk(ig2,ik2) < 1) CYCLE                          
                     
-                    ! Components of q in cartesian coordinates
-                    q(:) = xk(:,ik2) - xk(:,ik1) + g(:, alligk(ig2,ik2)) 
+                    ! q in cartesian coordinates and convert to RAU multiplying by tpiba
+                    q(:) = tpiba * (xk(:,ik2) - xk(:,ik1) + g(:, alligk(ig2,ik2)) )
                     
-                    ! Calculate |q| and convert to RAU multiplying by tpiba
-                    qnorm = tpiba * dsqrt(sum(q(:)**2))
+                    ! Calculate |q| 
+                    !qnorm = dsqrt(sum(q(:)**2))
                     
-                    IF (qnorm < tol) THEN
-                       ! |q|==0.0 and cannot divide by it --> leave this term out of the integral
-                       CYCLE 
-                    ENDIF
-                            
 
-                    iq = find_bin(numqbins, binedgesQ, qnorm)    
+                    iqx = find_bin(numqbins, binedgesQ, q(1))
+                    iqy = find_bin(numqbins, binedgesQ, q(2))
+                    iqz = find_bin(numqbins, binedgesQ, q(3))
+    
                     
                     ! Initialize f1 for this (ik1, ik2, ig2)
                     f1(:)=0.0
@@ -438,7 +437,7 @@ SUBROUTINE qedark_f2( restartmode, &
                     ENDIF
 
                     ! Add contribution to corresponding bin
-                    ctot(iq, iE) = ctot(iq, iE) + f2 * wk(ik1) * wk(ik2)
+                    ctot(iqx, iqy, iqz, iE) = ctot(iqx, iqy, iqz, iE) + f2 * wk(ik1) * wk(ik2)
 
                  ENDDO
                  
@@ -457,7 +456,7 @@ SUBROUTINE qedark_f2( restartmode, &
      !ctot(:,:) =  ctot(:,:)/(er_binsize*dq)
      
      ! Print to file
-     CALL C2file_onlyf2(outfile, numqbins, num_er_bins, ctot(:,:) )
+     CALL C2file_f2_3d(outfile, dq, numqbins, Er_binsize, num_Er_bins, ctot )
 
 
   ENDIF  ! runff
@@ -468,6 +467,6 @@ SUBROUTINE qedark_f2( restartmode, &
   print *, " " 
   
   
-  CALL stop_clock( ' qedark_f2 ' )
+  CALL stop_clock( ' qedark_f2_3d ' )
   
-END SUBROUTINE qedark_f2
+END SUBROUTINE qedark_f2_3d
