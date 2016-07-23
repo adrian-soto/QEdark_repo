@@ -133,13 +133,6 @@ SUBROUTINE qedark()
   print *, " "
   
 
-    !!!!! DEBUG                                                                                                                                                        
-  do ierr=1, 100
-     print *, "DEBUG-- from qedark() i=", ierr
-  enddo
-  !!!!! END DEBUG      
-
-
   IF (nspin .ne. 1) THEN
      PRINT *, " "
      PRINT *, " Spin-polarized calculation == TRUE"
@@ -170,6 +163,15 @@ SUBROUTINE qedark()
   
   IF (calculation_mode == "f2") THEN
      CALL qedark_f2( &
+          restart_mode, &
+          nksf, nbndval, nbndcond, &
+          vearth_SI, vesc_SI, v0_SI, deltav_SI, &
+          Er_bin_type, num_er_bins, ermax_NU, er_binsize, &
+          num_q_bins, deltaq, &
+          scissor_correction, scissorgap)
+
+  ELSEIF (calculation_mode == "f2_3d") THEN
+     CALL qedark_f2_3d( &
           restart_mode, &
           nksf, nbndval, nbndcond, &
           vearth_SI, vesc_SI, v0_SI, deltav_SI, &
